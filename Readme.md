@@ -16,7 +16,7 @@
 
 # SSR的一键安装命令：
 ```
-wget -N --no-check-certificate https://raw.githubusercontent.com/91yun/shadowsocks_install/master/ssr-install.sh && bash ssr-install.sh
+wget -N --no-check-certificate https://raw.githubusercontent.com/ck66/shadowsocks_install/fix/ssr-install.sh && bash ssr-install.sh
 ```
 安装完后会直接提示新增用户：
 1. 输入密码，默认91yun.org：
