@@ -1,10 +1,7 @@
 #!/bin/bash
  
-[ "$EUID" -ne '0' ] && echo "Error,This script must be run as root! " && exit 1
-[ $# -gt '1' ] && [ "$1" == '-f' ] && tmpKernelVer="$2" || tmpKernelVer='';
 KernelVer='';
 KernelBitVer='';
-[ -z "$(dpkg -l |grep 'grub-')" ] && echo "Not found grub." && exit 1
 MainURL='http://kernel.ubuntu.com/~kernel-ppa/mainline'
 [ -n "$tmpKernelVer" ] && {
 wget -qO /dev/null "$MainURL/$tmpKernelVer"
@@ -21,20 +18,19 @@ KernelBit="$(getconf LONG_BIT)"
 [ "$KernelBit" == '32' ] && KernelBitVer='i386'
 [ "$KernelBit" == '64' ] && KernelBitVer='amd64'
 [ -z "$KernelBitVer" ] && echo "Error! " && exit 1
-KernelFile="$(wget -qO- "$ReleaseURL" |awk -F '">|href="' '/generic.*.deb/{print $2}' |grep 'image' |grep "$KernelBitVer" |head -n1)"
-echo -ne "Download New Kernel\n\t$KernelFile\n"
-wget -qO "$KernelFile" "$ReleaseURL/$KernelFile"
-echo -ne "Install New Kernel\n\t$KernelFile\n"
-dpkg -i "$KernelFile" >/dev/null 2>&1
-Newest="$(echo "$KernelFile" |awk -F '_' '{print $1}')"
-KernelList="$(dpkg -l |grep 'linux-image' |awk '{print $2}')"
-[ -z "$(echo $KernelList |grep -o "$Newest")" ] && echo "Install error." && exit 1
-for KernelTMP in `echo "$KernelList"`
- do
-  [ "$KernelTMP" != "$Newest" ] && echo -ne "Uninstall Old Kernel\n\t$KernelTMP\n" && DEBIAN_FRONTEND=noninteractive dpkg --purge "$KernelTMP" >/dev/null 2>&1
-done
-[ "$(dpkg --get-selections |grep 'linux-image' |awk '{print $2}' |grep '^install' |wc -l)" != '1' ] && echo "Error, uninstall old Kernel." && exit 1
-update-grub >/dev/null 2>&1
+HeadersFile="$(wget -qO- "$ReleaseURL" |awk -F '">|href="' '/generic.*.deb/{print $2}' |grep 'headers' |grep "$KernelBitVer" |head -n1)"
+[ -n "$HeadersFile" ] && HeadersAll="$(echo "$HeadersFile" |sed 's/-generic//g;s/_'${KernelBitVer}'.deb/_all.deb/g')"
+[ -z "$HeadersAll" ] && echo "Error! Get Linux Headers for All." && exit 1
+echo "$HeadersFile" | grep -q "$(uname -r)"
+[ $? -ne '0' ] && echo "Error! Header not be matched by Linux Kernel." && exit 1
+echo -ne "Download Kernel Headers for All\n\t$HeadersAll\n"
+wget -qO "$HeadersAll" "$ReleaseURL/$HeadersAll"
+echo -ne "Install Kernel Headers for All\n\t$HeadersAll\n"
+dpkg -i "$HeadersAll" >/dev/null 2>&1
+echo -ne "Download Kernel Headers\n\t$HeadersFile\n"
+wget -qO "$HeadersFile" "$ReleaseURL/$HeadersFile"
+echo -ne "Install Kernel Headers\n\t$HeadersFile\n"
+dpkg -i "$HeadersFile" >/dev/null 2>&1
 [ "$1" == '-f' ] && {
 echo "It will reboot now..."
 } || {
