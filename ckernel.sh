@@ -1,5 +1,49 @@
 #!/bin/bash
- 
+[ "$EUID" -ne '0' ] && echo "Error,This script must be run as root! " && exit 1
+[ $# -gt '1' ] && [ "$1" == '-f' ] && tmpKernelVer="$2" || tmpKernelVer='';
+[ -z "$(dpkg -l |grep 'grub-')" ] && echo "Not found grub." && exit 1
+which make >/dev/null 2>&1
+[ $? -ne '0' ] && {
+echo "Install make..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq make >/dev/null 2>&1
+which make >/dev/null 2>&1
+[ $? -ne '0' ] && {
+echo "Error! Install make. "
+exit 1
+}
+}
+which awk >/dev/null 2>&1
+[ $? -ne '0' ] && {
+echo "Install awk..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gawk >/dev/null 2>&1
+which awk >/dev/null 2>&1
+[ $? -ne '0' ] && {
+echo "Error! Install awk. "
+exit 1
+}
+}
+which gcc >/dev/null 2>&1
+[ $? -ne '0' ] && {
+echo "Install gcc..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gcc >/dev/null 2>&1
+which gcc >/dev/null 2>&1
+[ $? -ne '0' ] && {
+echo "Error! Install gcc. "
+echo "Please 'apt-get update' and try again! "
+exit 1
+}
+}
+GCCVER="$(readlink `which gcc` |grep -o '[0-9].*')"
+GCCVER1="$(echo $GCCVER |awk -F. '{print $1}')"
+GCCVER2="$(echo $GCCVER |awk -F. '{print $2}')"
+[ -n "$GCCVER1" ] && [ "$GCCVER1" -gt '4' ] && CheckGCC='0' || CheckGCC='1'
+[ "$CheckGCC" == '1' ] && [ -n "$GCCVER2" ] && [ "$GCCVER2" -ge '9' ] && CheckGCC='0'
+[ "$CheckGCC" == '1' ] && {
+echo "The gcc version require gcc-4.9 or higher. "
+echo "You can try apt-get install -y gcc-4.9 or apt-get install -y gcc-6"
+echo "Please upgrade it manually! "
+exit 1
+}
 KernelVer='';
 KernelBitVer='';
 MainURL='http://kernel.ubuntu.com/~kernel-ppa/mainline'
